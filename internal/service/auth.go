@@ -17,6 +17,7 @@ func NewAuthService(queries *db.Queries) *AuthService {
 }
 
 var ErrUserExists = errors.New("Username already exist") // sentinel error for the business logic errors
+var ErrWrongPw = errors.New("Invalid password")
 
 func (s *AuthService) Register(ctx context.Context, username string, password string) error {
 
@@ -46,6 +47,26 @@ func (s *AuthService) Register(ctx context.Context, username string, password st
 		return fmt.Errorf("Failed to register user into DB %w", err)
 	}
 
+	return nil
+
+}
+
+func (s *AuthService) Login(ctx context.Context, username string, password string) error {
+
+	var cred db.Cred
+	cred, err := s.Queries.GetUserByUsername(ctx, username) //this is retarded, just get pw
+	if err != nil {
+		fmt.Errorf("Failed getting username and password from DB")
+	}
+
+	compare := auth.CheckPassword(password, cred.Password)
+
+	if compare == false {
+		return ErrWrongPw
+
+	}
+
+	fmt.Println()
 	return nil
 
 }

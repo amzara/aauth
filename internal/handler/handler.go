@@ -27,6 +27,7 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 
 func (s *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/register", s.Register)
+	mux.HandleFunc("POST /api/login", s.Login)
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -60,4 +61,33 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "user created"})
+}
+
+//TODO: pw validation
+
+func (s *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var creds signupRequest
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(body, &creds); err != nil {
+		http.Error(w, "failed to unmarshal json body", http.StatusBadRequest)
+		return
+	}
+
+	if err = s.authService.Login(r.Context(), creds.Username, creds.Password); err != nil {
+		if errors.Is(err, service.ErrWrongPw) {
+			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+			return
+		} else {
+			http.Error(w, "unexpected error", http.StatusInternalServerError)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Login success"})
 }
