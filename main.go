@@ -4,6 +4,7 @@ import (
 	"aauth/internal/db"
 	"aauth/internal/handler"
 	"aauth/internal/service"
+	"aauth/internal/service/redis"
 	"context"
 	"log"
 	"net/http"
@@ -25,7 +26,9 @@ func main() {
 
 	queries := db.New(pool)
 
-	authService := service.NewAuthService(queries)
+	rdb, _ := redis.NewRedisService(ctx, os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PW"))
+
+	authService := service.NewAuthService(queries, rdb)
 
 	authHandler := handler.NewAuthHandler(authService)
 
@@ -34,6 +37,7 @@ func main() {
 	authHandler.RegisterRoutes(mux)
 
 	log.Println("Starting http server on :8080")
+
 	log.Fatal(http.ListenAndServe(":8080", mux))
 
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"aauth/internal/auth"
 	"aauth/internal/db"
+	"aauth/internal/service/redis"
 	"context"
 	"errors"
 	"fmt"
@@ -10,19 +11,17 @@ import (
 
 type AuthService struct {
 	Queries *db.Queries
+	Redis   *redis.RedisService
 }
 
-func NewAuthService(queries *db.Queries) *AuthService {
-	return &AuthService{Queries: queries}
+func NewAuthService(queries *db.Queries, redis *redis.RedisService) *AuthService {
+	return &AuthService{Queries: queries, Redis: redis}
 }
 
 var ErrUserExists = errors.New("Username already exist") // sentinel error for the business logic errors
 var ErrWrongPw = errors.New("Invalid password")
 
 func (s *AuthService) Register(ctx context.Context, username string, password string) error {
-
-	fmt.Println("Received username : %v", username)
-	fmt.Println("Received password : %v", password)
 
 	exists, err := s.Queries.CheckUserExists(ctx, username)
 	if err != nil {
