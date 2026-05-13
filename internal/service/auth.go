@@ -3,7 +3,7 @@ package service
 import (
 	"aauth/internal/auth"
 	"aauth/internal/db"
-	"aauth/internal/service/redis"
+	"aauth/internal/session"
 	"context"
 	"errors"
 	"fmt"
@@ -11,11 +11,11 @@ import (
 
 type AuthService struct {
 	Queries *db.Queries
-	Redis   *redis.RedisService
+	Store   *session.Store
 }
 
-func NewAuthService(queries *db.Queries, redis *redis.RedisService) *AuthService {
-	return &AuthService{Queries: queries, Redis: redis}
+func NewAuthService(queries *db.Queries, s *session.Store) *AuthService {
+	return &AuthService{Queries: queries, Store: s}
 }
 
 var ErrUserExists = errors.New("Username already exist") // sentinel error for the business logic errors
@@ -50,22 +50,27 @@ func (s *AuthService) Register(ctx context.Context, username string, password st
 
 }
 
-func (s *AuthService) Login(ctx context.Context, username string, password string) error {
+func (s *AuthService) Login(ctx context.Context, username string, password string) (string, error) {
 
 	var cred db.Cred
 	cred, err := s.Queries.GetUserByUsername(ctx, username) //this is retarded, just get pw
 	if err != nil {
-		fmt.Errorf("Failed getting username and password from DB")
+
+		return ("Failed getting username and password from DB"), err
 	}
 
 	compare := auth.CheckPassword(password, cred.Password)
 
 	if compare == false {
-		return ErrWrongPw
+		return "invalid pw", ErrWrongPw
 
 	}
+	sessionToken, err := s.Store.Create(ctx, username, nil)
 
-	fmt.Println()
-	return nil
+	if err != nil {
+		return "failed to create session token", err
+	}
+
+	return sessionToken, nil
 
 }

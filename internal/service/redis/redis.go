@@ -2,7 +2,7 @@ package redis
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -16,9 +16,9 @@ func NewRedisService(ctx context.Context, addr string, pw string) (*RedisService
 		Addr:     addr,
 		Password: pw,
 	})
-	defer rdb.Close()
+
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Failed to connect to redis")
+		return nil, fmt.Errorf("redis ping failed: $w", err)
 	}
 	return &RedisService{
 		Client: rdb,

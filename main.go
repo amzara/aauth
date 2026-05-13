@@ -5,6 +5,7 @@ import (
 	"aauth/internal/handler"
 	"aauth/internal/service"
 	"aauth/internal/service/redis"
+	"aauth/internal/session"
 	"context"
 	"log"
 	"net/http"
@@ -26,9 +27,14 @@ func main() {
 
 	queries := db.New(pool)
 
-	rdb, _ := redis.NewRedisService(ctx, os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PW"))
+	rdb, err := redis.NewRedisService(ctx, os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PW"))
+	if err != nil {
+		log.Fatalf("Unable to connect to redis %v", err)
+	}
 
-	authService := service.NewAuthService(queries, rdb)
+	s := session.NewStore(rdb.Client)
+
+	authService := service.NewAuthService(queries, s)
 
 	authHandler := handler.NewAuthHandler(authService)
 

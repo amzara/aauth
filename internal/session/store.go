@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 
 const sessionTTL = 2 * time.Hour
 const sessionPrefix = "session:"
+
+var ErrSessionNotFound = errors.New("session does not exist")
 
 type Store struct {
 	rdb *redis.Client
@@ -61,7 +64,7 @@ func (s *Store) Get(ctx context.Context, token string) (map[string]string, error
 		return nil, err
 	}
 	if len(result) == 0 {
-		return nil, nil
+		return nil, ErrSessionNotFound
 	}
 	return result, nil
 }
