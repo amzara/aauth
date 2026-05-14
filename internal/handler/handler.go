@@ -34,6 +34,7 @@ func (s *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/register", s.Register)
 	mux.HandleFunc("POST /api/login", s.Login)
 	mux.HandleFunc("POST /api/auth", s.SessionCheck)
+	mux.HandleFunc("POST /api/logout", s.Logout)
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -126,9 +127,47 @@ func (s *AuthHandler) SessionCheck(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
 	json.NewEncoder(w).Encode(m)
+
+}
+
+func (s *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "cant read request body", http.StatusBadRequest)
+	}
+
+	var token sessionToken
+
+	if err := json.Unmarshal(body, &token); err != nil {
+		http.Error(w, "cant read request body", http.StatusBadRequest)
+	}
+
+	err = s.authService.Logout(r.Context(), token.Token)
+	if err != nil {
+		if err == session.ErrSessionNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{
+				"message": "session not found",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "internal server error",
+		})
+		return
+
+	}
+	w.WriteHeader(http.StatusAccepted)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Succesfully logged out",
+	})
 
 }

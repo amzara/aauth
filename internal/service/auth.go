@@ -74,3 +74,28 @@ func (s *AuthService) Login(ctx context.Context, username string, password strin
 	return sessionToken, nil
 
 }
+
+func (s *AuthService) Logout(ctx context.Context, sessionToken string) error {
+	exists, err := s.Store.Check(ctx, sessionToken)
+	if err != nil {
+		{
+			return fmt.Errorf("internal server error %w", err)
+		}
+	}
+	if !exists {
+		return session.ErrSessionNotFound
+	}
+
+	if err = s.Store.Destroy(ctx, sessionToken); err != nil {
+		return fmt.Errorf("failed to destroy token %w", err)
+
+	}
+
+	return nil
+
+	//
+	//
+	//
+	//
+
+}

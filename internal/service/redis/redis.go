@@ -18,7 +18,7 @@ func NewRedisService(ctx context.Context, addr string, pw string) (*RedisService
 	})
 
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("redis ping failed: $w", err)
+		return nil, fmt.Errorf("redis ping failed: %w", err)
 	}
 	return &RedisService{
 		Client: rdb,
